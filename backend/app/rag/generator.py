@@ -66,15 +66,17 @@ class Generator:
 
         try:
             response = self.model.generate_content(prompt, generation_config={"response_mime_type": "application/json"})
+            print(f"AI RAW RESPONSE: {response.text}")
             return json.loads(response.text.strip())
         except Exception as e:
+            print(f"AI Generation Error: {e}")
             # Fallback for parsing errors or API issues
             return {
                 "answer": {
-                    "summary": "Error generating structured response.",
+                    "summary": f"I encountered an error while processing your request: {str(e)}",
                     "steps": [],
                     "rules": [],
-                    "notes": [str(e)]
+                    "notes": ["Please try rephrasing your question or check the logs for more details."]
                 },
                 "sources": []
             }
