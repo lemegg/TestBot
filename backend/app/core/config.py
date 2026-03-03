@@ -3,7 +3,7 @@ from pydantic_settings import BaseSettings
 from typing import List
 
 class Settings(BaseSettings):
-    GEMINI_API_KEY: str
+    GEMINI_API_KEY: str = ""
     MODEL_NAME: str = "models/gemini-flash-latest"
     EMBEDDING_MODEL_NAME: str = "sentence-transformers/all-MiniLM-L6-v2"
     DOCS_DIR: str = os.path.join("backend", "data", "sops")
@@ -25,8 +25,10 @@ class Settings(BaseSettings):
     def allowed_emails(self) -> List[str]:
         return [e.strip() for e in self.ANALYTICS_ALLOWED_EMAILS.split(",") if e.strip()]
 
-    class Config:
-        env_file = ".env"
+    model_config = {
+        "env_file": ".env",
+        "extra": "ignore"
+    }
 
 settings = Settings()
 
