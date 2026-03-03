@@ -17,11 +17,13 @@ RUN apt-get update && apt-get install -y \
 
 # Copy backend requirements
 COPY requirements.txt ./
-RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy everything else
-COPY . .
+# CRITICAL: Install CPU-only torch to save massive space
+RUN pip install torch --index-url https://download.pytorch.org/whl/cpu && \
+    pip install --no-cache-dir -r requirements.txt
 
+# Copy backend code
+COPY backend/ ./backend/
 # Copy built frontend from Stage 1
 COPY --from=build-frontend /frontend/dist ./frontend/dist
 

@@ -1,6 +1,33 @@
-venv
-__pycache__
+# Python
+venv/
+__pycache__/
+*.py[cod]
+*$py.class
+*.db
+backend/app.db
+
+# Frontend
+frontend/node_modules/
+frontend/dist/
+
+# Git
+.git/
+.gitignore
+
+# Environments
 .env
-frontend/node_modules
-.git
-backend/data/sops
+.env.*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# RAG Data
+# We want the SOPs in the image for the MVP indexing, 
+# but if they are huge, we'd need a Volume.
+# For now, let's keep them and focus on the Python libraries.
+
+# Large test scripts
+test_register.py
+debug_register.py
+test_manual_register.py
