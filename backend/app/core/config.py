@@ -10,9 +10,14 @@ class Settings(BaseSettings):
     # Base directory for persistent data
     DATA_DIR: str = os.getenv("PERSISTENT_DATA_DIR", "backend")
     
+    # Use absolute paths for the database to avoid issues with working directories
+    @property
+    def DATABASE_URL(self) -> str:
+        db_path = os.path.abspath(os.path.join(self.DATA_DIR, "app.db"))
+        return f"sqlite:///{db_path}"
+
     DOCS_DIR: str = os.path.join("backend", "data", "sops")
     INDEX_DIR: str = os.path.join(DATA_DIR, "faiss_index")
-    DATABASE_URL: str = f"sqlite:///./{DATA_DIR}/app.db"
 
     TOP_K: int = 4
     CHUNK_SIZE: int = 700
