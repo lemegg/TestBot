@@ -19,9 +19,9 @@ class Settings(BaseSettings):
     DOCS_DIR: str = os.path.join("backend", "data", "sops")
     INDEX_DIR: str = os.path.join(DATA_DIR, "faiss_index")
 
-    TOP_K: int = 4
+    TOP_K: int = 8
     CHUNK_SIZE: int = 700
-    CHUNK_OVERLAP: int = 100
+    CHUNK_OVERLAP: int = 150
 
     SECRET_KEY: str = "change-me-for-production"
     ALGORITHM: str = "HS256"

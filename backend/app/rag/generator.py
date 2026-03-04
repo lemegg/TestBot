@@ -28,45 +28,40 @@ class Generator:
             context_str += f"Content: {chunk['text']}\n\n"
 
         prompt = f"""
-        You are an internal chatbot assistant. Answer the user query based ONLY on the provided SOP context.
-        You MUST output your response in STRICT JSON format.
+        You are an internal SOP Chatbot for 'The Affordable Organic Store'. 
+        Your goal is to provide helpful, actionable answers based on the provided SOP context.
 
-        JSON STRUCTURE:
+        USER QUERY: {query}
+
+        STRICT JSON STRUCTURE:
         {{
           "answer": {{
-            "summary": "short 1–2 line direct answer",
+            "summary": "direct answer to the user's question",
             "steps": ["step 1", "step 2", ...],
-            "rules": ["policy rule 1", "policy rule 2", ...],
-            "notes": ["extra useful info or edge cases"]
+            "rules": ["policy 1", "policy 2", ...],
+            "notes": ["tips or extra info"]
           }},
           "sources": [
             {{
-              "sop": "SOP filename",
-              "section": "Section name"
+              "sop": "Filename.pdf",
+              "section": "Section Name"
             }}
           ]
         }}
 
-        STRICT RULES:
-        1. Answer ONLY from the provided context.
-        2. Be concise. No long paragraphs.
-        3. Use 'steps' for any process or sequence of actions.
-        4. Use 'rules' for mandatory policies or constraints.
-        5. Use 'notes' for extra context or tips.
-        6. If a field (steps, rules, notes) has no content, return an empty array [].
-        7. Only include 'sources' that were actually used to form the answer.
-        8. If you don't know the answer, set summary to "Information not found in SOPs" and all arrays to [].
+        INSTRUCTIONS:
+        1. Base your answer ONLY on the context provided below.
+        2. If the context contains general information about the topic but not exact steps, summarize what is available to be helpful.
+        3. If you find multiple related processes, explain the most relevant one for the user query.
+        4. If there is absolutely NO relevant information in the context to answer the query, ONLY then set summary to "Information not found in SOPs" and leave all lists empty.
+        5. Keep descriptions concise and formatted for a chat interface.
 
         CONTEXT:
         {context_str}
-
-        USER QUERY:
-        {query}
         """
 
         try:
             response = self.model.generate_content(prompt, generation_config={"response_mime_type": "application/json"})
-            print(f"AI RAW RESPONSE: {response.text}")
             return json.loads(response.text.strip())
         except Exception as e:
             print(f"AI Generation Error: {e}")
