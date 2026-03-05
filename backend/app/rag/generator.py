@@ -7,7 +7,9 @@ from app.core.config import settings
 class Generator:
     def __init__(self):
         genai.configure(api_key=settings.GEMINI_API_KEY)
-        self.model = genai.GenerativeModel(settings.MODEL_NAME)
+        # Use explicit model name from settings
+        self.model_name = settings.MODEL_NAME
+        self.model = genai.GenerativeModel(self.model_name)
 
     def _extract_json(self, text: str) -> Dict[str, Any]:
         """Robustly extract JSON from text, handling markdown blocks or extra text."""
