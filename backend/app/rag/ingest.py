@@ -1,6 +1,6 @@
 import os
 import docx
-from pypdf import PdfReader
+import pdfplumber
 from typing import List, Dict, Any
 from app.rag.chunker import Chunker
 from app.rag.embedder import Embedder
@@ -50,32 +50,33 @@ class Ingestor:
         return all_chunks
 
     def parse_pdf(self, file_path: str) -> List[Dict[str, Any]]:
-        reader = PdfReader(file_path)
         filename = os.path.basename(file_path)
-        
         full_text = ""
-        links = []
+        links_data = []
         
-        for page in reader.pages:
-            # Extract regular text
-            text = page.extract_text()
-            if text:
-                full_text += text + "\n"
-            
-            # Extract links from annotations
-            if "/Annots" in page:
-                for annot in page["/Annots"]:
-                    obj = annot.get_object()
-                    if "/A" in obj and "/URI" in obj["/A"]:
-                        uri = obj["/A"]["/URI"]
-                        # Try to find context for the link if possible
-                        # For now, just collect them
-                        links.append(uri)
+        with pdfplumber.open(file_path) as pdf:
+            for page in pdf.pages:
+                # 1. Extract regular text
+                text = page.extract_text()
+                if text:
+                    full_text += text + "\n"
+                
+                # 2. Extract hyperlinks
+                page_links = page.hyperlinks
+                if page_links:
+                    for link in page_links:
+                        if link.get('uri'):
+                            links_data.append(link['uri'])
         
-        # Append found links to the end of the text so they are indexed
-        if links:
+        # 3. Append links to text so they are indexed and visible to AI
+        if links_data:
             full_text += "\n--- Document Links ---\n"
-            full_text += "\n".join(list(set(links)))
+            # Remove duplicates while keeping order
+            unique_links = []
+            for l in links_data:
+                if l not in unique_links:
+                    unique_links.append(l)
+            full_text += "\n".join(unique_links)
         
         metadata = {
             "sop_name": filename,
