@@ -32,9 +32,18 @@ def check_and_ingest():
             indexed_files = set([m.get('sop_name') for m in vs.metadata])
             current_files = set([f for f in os.listdir(settings.DOCS_DIR) if f.lower().endswith(('.pdf', '.docx', '.txt'))])
             
-            # If there are files in the directory that aren't in our index metadata
+            # 2a. Check for missing files
             if not current_files.issubset(indexed_files):
                 print(f"New files detected in {settings.DOCS_DIR}. Updating index...")
+                should_ingest = True
+            
+            # 2b. Check if we need to upgrade to the new link-extraction logic
+            # If we have PDFs but no chunks mention 'Links found on this page', the index is old
+            has_pdf = any(f.lower().endswith('.pdf') for f in current_files)
+            has_link_logic = any("Links found on this page:" in m.get('text', '') for m in vs.metadata)
+            
+            if has_pdf and not has_link_logic:
+                print("Index found but lacks link context. Forcing re-ingestion for high-fidelity extraction...")
                 should_ingest = True
         except Exception as e:
             print(f"Error checking index status: {e}. Forcing re-ingestion just in case.")
