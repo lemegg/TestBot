@@ -52,31 +52,39 @@ class Ingestor:
     def parse_pdf(self, file_path: str) -> List[Dict[str, Any]]:
         filename = os.path.basename(file_path)
         full_text = ""
-        links_data = []
         
         with pdfplumber.open(file_path) as pdf:
             for page in pdf.pages:
-                # 1. Extract regular text
-                text = page.extract_text()
-                if text:
-                    full_text += text + "\n"
+                page_text = page.extract_text() or ""
                 
-                # 2. Extract hyperlinks
-                page_links = page.hyperlinks
-                if page_links:
-                    for link in page_links:
-                        if link.get('uri'):
-                            links_data.append(link['uri'])
-        
-        # 3. Append links to text so they are indexed and visible to AI
-        if links_data:
-            full_text += "\n--- Document Links ---\n"
-            # Remove duplicates while keeping order
-            unique_links = []
-            for l in links_data:
-                if l not in unique_links:
-                    unique_links.append(l)
-            full_text += "\n".join(unique_links)
+                # Extract hyperlinks with their positions
+                hyperlinks = page.hyperlinks
+                
+                if hyperlinks:
+                    # Sort links by their vertical position (top to bottom)
+                    # This helps in inserting them close to the text they belong to
+                    processed_text = page_text
+                    
+                    # We'll try to find the words associated with the link box
+                    # This is advanced: we'll append a map of "Link Context" at the end of the page
+                    link_map = []
+                    for link in hyperlinks:
+                        if not link.get('uri'): continue
+                        
+                        # Find words within the link's bounding box
+                        link_bbox = (link['x0'], link['top'], link['x1'], link['bottom'])
+                        words_in_link = page.within_bbox(link_bbox).extract_text()
+                        
+                        if words_in_link:
+                            link_map.append(f"[{words_in_link.strip()}]({link['uri']})")
+                        else:
+                            # Fallback if no text inside box
+                            link_map.append(link['uri'])
+                    
+                    if link_map:
+                        page_text += "\n\nLinks found on this page:\n" + "\n".join(link_map)
+                
+                full_text += page_text + "\n\n"
         
         metadata = {
             "sop_name": filename,

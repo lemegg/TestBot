@@ -82,11 +82,12 @@ class Generator:
 
         INSTRUCTIONS:
         1. Base your answer ONLY on the context provided below.
-        2. If the context contains URLs or links to sheets/documents, ALWAYS include them in your answer as clickable markdown links (e.g., [Link Name](https://...)).
-        3. If the context contains general information about the topic but not exact steps, summarize what is available to be helpful.
-        4. If you find multiple related processes, explain the most relevant one for the user query.
-        5. If there is absolutely NO relevant information in the context to answer the query, ONLY then set summary to "Information not found in SOPs" and leave all lists empty.
-        6. Keep descriptions concise and formatted for a chat interface.
+        2. If the context contains a section like 'Links found on this page:', use your reasoning to match those URLs with the corresponding items mentioned in the main text (e.g., matching a Canva URL with 'Canva Catalog Link').
+        3. ALWAYS include relevant URLs in your answer as clickable markdown links (e.g., [Link Name](https://...)).
+        4. If the context contains general information about the topic but not exact steps, summarize what is available to be helpful.
+        5. If you find multiple related processes, explain the most relevant one for the user query.
+        6. If there is absolutely NO relevant information in the context to answer the query, ONLY then set summary to "Information not found in SOPs" and leave all lists empty.
+        7. Keep descriptions concise and formatted for a chat interface.
 
         CONTEXT:
         {context_str}
