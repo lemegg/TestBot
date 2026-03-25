@@ -3,9 +3,9 @@ from pydantic import BaseModel
 from typing import List, Dict, Any, Optional
 from app.rag.retriever import Retriever
 from app.rag.generator import Generator
-from app.core.auth import get_current_user
-from app.models.models import User, QueryLog
-from app.core.database import get_db
+from app.auth.clerk_auth import get_current_user, ClerkUser
+from app.models.models import ChatLog
+from app.db import get_db
 from sqlalchemy.orm import Session
 import json
 
@@ -46,66 +46,106 @@ class ChatResponse(BaseModel):
 @router.post("/chat", response_model=ChatResponse)
 async def chat_endpoint(
     request: ChatRequest, 
-    current_user: User = Depends(get_current_user),
+    current_user: ClerkUser = Depends(get_current_user),
     db: Session = Depends(get_db),
     retriever: Retriever = Depends(get_retriever),
     generator: Generator = Depends(get_generator)
 ):
     try:
-        # Ensure index is loaded if it was empty
-        if not retriever.vector_store.metadata:
-            print("Retriever metadata empty. Attempting to reload...")
-            try:
-                retriever.vector_store.load()
-                print("Retriever reloaded successfully.")
-            except Exception as re:
-                print(f"Failed to reload retriever: {re}")
+        # STEP 1: User OK
+        print("STEP 1: User OK")
+        
+        # SAFE USER EXTRACTION
+        company_name = getattr(current_user, 'company_name', None) or "Unknown"
+        email = getattr(current_user, 'email', None) or "Unknown"
+        
+        print(f"CHAT USER: {email}")
+        print(f"COMPANY: {company_name}")
+        print(f"QUESTION: {request.query}")
 
-        # Retrieve chunks
-        context_chunks = retriever.retrieve(request.query)
-        print(f"Retrieved {len(context_chunks)} chunks for query: {request.query}")
+        # STEP 2: Retrieving docs
+        print("STEP 2: Retrieving docs")
+        
+        # VALIDATE VECTOR STORE INITIALIZATION
+        if retriever is None:
+            raise Exception("Retriever not initialized")
+
+        # Retrieve chunks (no longer filtering by organization/department)
+        # Ensure retriever ALWAYS returns a list
+        docs = retriever.retrieve(db, request.query) or []
+        
+        # STEP 3: Docs count
+        print(f"STEP 3: Docs count: {len(docs)}")
+
+        # HANDLE EMPTY DOCS
+        if len(docs) == 0:
+            return ChatResponse(
+                query_log_id=0,
+                answer=Answer(
+                    summary="I couldn't find relevant information in the knowledge base.",
+                    steps=[],
+                    rules=[],
+                    notes=[]
+                ),
+                sources=[]
+            )
+        
+        # STEP 4: Generating response
+        print("STEP 4: Generating response")
         
         # Generate structured answer
-        result = generator.generate_answer(request.query, context_chunks)
+        # The current generator.generate_answer uses self.model.generate_content which is equivalent to chain.invoke
+        result = generator.generate_answer(request.query, docs)
         
-        # Estimate token usage
-        # Rule of thumb: ~4 characters per token or ~0.75 words per token
-        context_text = " ".join([c['text'] for c in context_chunks])
-        estimated_input_tokens = len(request.query.split()) + len(context_text.split()) + 500 # + prompt overhead
-        estimated_output_tokens = len(str(result).split())
-        print(f"DEBUG: Estimated Token Usage - Input: ~{estimated_input_tokens}, Output: ~{estimated_output_tokens}")
-        import sys
-        sys.stdout.flush()
-        
-        # Log the query
-        sop_names = list(set([c.get("sop_name", c.get("sop", "Unknown")) for c in context_chunks]))
-        
+        if result is None:
+            result = {
+                "answer": {
+                    "summary": "No response generated.",
+                    "steps": [],
+                    "rules": [],
+                    "notes": []
+                },
+                "sources": []
+            }
+
         # Determine status
+        answer_summary = result.get('answer', {}).get('summary', '')
         status = "SUCCESS"
-        if not context_chunks or result.get('answer', {}).get('summary') == "Information not found in SOPs":
+        if not docs or "Information not found" in answer_summary:
             status = "not_found"
 
-        log = QueryLog(
-            user_id=current_user.id,
+        # Log the query
+        sop_names = list(set([str(c.get("sop_name", "Unknown")) for c in docs]))
+        
+        log = ChatLog(
+            user_id=current_user.user_id,
+            email=email,
+            company_name=company_name,
             query_text=request.query,
+            response_text=answer_summary,
             retrieved_sop=", ".join(sop_names) if sop_names else "NONE",
             response_status=status
         )
         db.add(log)
         db.commit()
         db.refresh(log)
+        print(f"CHAT_LOG: {email} | {company_name} | {request.query}")
+        print("SAVED TO chat_logs")
         
         return ChatResponse(query_log_id=log.id, **result)
+
     except Exception as e:
-        print(f"Chat error: {e}")
+        print("CHAT ERROR:", str(e))
         import traceback
         traceback.print_exc()
-        # Log failure
-        log = QueryLog(
-            user_id=current_user.id,
-            query_text=request.query,
-            response_status=f"FAILED: {str(e)}"
+        # Return a graceful fallback instead of crashing with 500
+        return ChatResponse(
+            query_log_id=0,
+            answer=Answer(
+                summary="Something went wrong. Please try again.",
+                steps=[],
+                rules=[],
+                notes=[f"Error: {str(e)}"]
+            ),
+            sources=[]
         )
-        db.add(log)
-        db.commit()
-        raise HTTPException(status_code=500, detail=str(e))

@@ -2,7 +2,8 @@ fastapi
 uvicorn
 pydantic
 pydantic-settings
-faiss-cpu
+pgvector
+psycopg2-binary
 sentence-transformers
 google-generativeai
 python-docx
@@ -10,9 +11,16 @@ pypdf
 numpy
 python-dotenv
 python-jose[cryptography]
+requests
 passlib[bcrypt]
 bcrypt==4.0.1
 sqlalchemy
 python-multipart
 email-validator
 pdfplumber
+boto3
+pypdf
+python-docx
+tiktoken
+pgvector
+google-generativeai

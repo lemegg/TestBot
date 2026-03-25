@@ -1,8 +1,0 @@
-NAME: Order Status Inquiry
-SUMMARY: Assists in responding to customers asking about the status or delivery timeframe of their orders. It handles orders in transit and those out for delivery.
-STEPS:
-1. Check the current status of the order on the tracking portal or Woo-commerce.
-2. If the order is in transit for less than 15 days, ask the customer to wait for a few more days.
-3. If the order is marked as "Out for Delivery", inform the customer that it will reach them shortly.
-4. Advise the customer to keep their phone handy and ensure someone is available at the delivery address.
-5. Send the corresponding email template (Order in Transit or Out for Delivery) to the customer.

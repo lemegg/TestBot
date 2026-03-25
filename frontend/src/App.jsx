@@ -1,88 +1,151 @@
-import React, { useState } from 'react';
-import ChatWindow from './components/ChatWindow';
-import ChatInput from './components/ChatInput';
-import Login from './pages/Login';
+import React, { useState, useEffect } from 'react';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { SignedIn, SignedOut, SignIn, SignUp, useUser } from '@clerk/clerk-react';
+import Sidebar from './components/Sidebar';
 import Dashboard from './pages/Dashboard';
-import { AuthProvider, useAuth } from './context/AuthContext';
+import Chat from './pages/Chat';
+import Documents from './pages/Documents';
+import Analytics from './pages/Analytics';
+import RequireAdmin from './components/RequireAdmin';
+import MetadataForm from './components/MetadataForm';
 
-const ChatInterface = () => {
-  const [messages, setMessages] = useState([
-    {
-      sender: 'bot',
-      text: 'Hello! I am your SOP Assistant. How can I help you today?',
+const AppLayout = ({ children }) => {
+  const { user, isLoaded } = useUser();
+  const [showMetadataForm, setShowMetadataForm] = useState(false);
+
+  useEffect(() => {
+    if (isLoaded && user) {
+      const metadata = user.unsafeMetadata;
+      if (!metadata || !metadata.name || !metadata.company_name || !metadata.phone_number) {
+        setShowMetadataForm(true);
+      }
     }
-  ]);
-  const [loading, setLoading] = useState(false);
-  const { token, logout, user } = useAuth();
-  const [showDashboard, setShowDashboard] = useState(false);
-
-  const handleSendMessage = async (text) => {
-    const userMsg = { sender: 'user', text };
-    setMessages((prev) => [...prev, userMsg]);
-    setLoading(true);
-
-    try {
-      const api_url = window.location.origin.includes('localhost') || window.location.origin.includes('127.0.0.1')
-        ? 'http://127.0.0.1:8000/api/chat' 
-        : '/api/chat';
-
-      const response = await fetch(api_url, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({ query: text }),
-      });
-
-      if (!response.ok) throw new Error('Failed to fetch');
-
-      const data = await response.json();
-      setMessages((prev) => [...prev, {
-        sender: 'bot',
-        query_log_id: data.query_log_id,
-        answer: data.answer,
-        sources: data.sources,
-      }]);
-    } catch (error) {
-      setMessages((prev) => [...prev, {
-        sender: 'bot',
-        text: 'Server error. Please try again.',
-      }]);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  if (!token) return <Login />;
-  if (showDashboard) return (
-    <>
-      <button className="nav-btn" onClick={() => setShowDashboard(false)}>Back to Chat</button>
-      <Dashboard />
-    </>
-  );
+  }, [isLoaded, user]);
 
   return (
-    <div id="root">
-      <header className="app-header">
-        <span className="user-email">{user?.email}</span>
-        <div className="header-actions">
-          {user?.is_admin && (
-            <button onClick={() => setShowDashboard(true)}>Dashboard</button>
-          )}
-          <button onClick={logout}>Logout</button>
-        </div>
-      </header>
-      <ChatWindow messages={messages} isThinking={loading} />
-      <ChatInput onSendMessage={handleSendMessage} disabled={loading} />
+    <div className="app-container">
+      <Sidebar />
+      <div className="main-content">
+        {showMetadataForm && <MetadataForm onComplete={() => setShowMetadataForm(false)} />}
+        {children}
+      </div>
     </div>
   );
 };
 
 const App = () => (
-  <AuthProvider>
-    <ChatInterface />
-  </AuthProvider>
+  <BrowserRouter>
+    <Routes>
+      <Route path="/login/*" element={
+        <div style={{
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          height: "100vh",
+          width: "100vw",
+          backgroundColor: "#0f172a"
+        }}>
+          <SignIn 
+            routing="path" 
+            path="/login" 
+            signUpUrl="/register"
+            forceRedirectUrl="/chat"
+            fallbackRedirectUrl="/chat"
+            appearance={{
+              elements: {
+                card: "shadow-xl rounded-2xl",
+              }
+            }}
+          />
+        </div>
+      } />
+      <Route path="/register/*" element={
+        <div style={{
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          height: "100vh",
+          width: "100vw",
+          backgroundColor: "#0f172a"
+        }}>
+          <SignUp 
+            routing="path" 
+            path="/register" 
+            signInUrl="/login"
+            forceRedirectUrl="/chat"
+            fallbackRedirectUrl="/chat"
+            appearance={{
+              elements: {
+                card: "shadow-xl rounded-2xl",
+              }
+            }}
+          />
+        </div>
+      } />
+      
+      <Route path="/dashboard" element={
+        <>
+          <SignedIn>
+            <RequireAdmin>
+              <AppLayout><Dashboard /></AppLayout>
+            </RequireAdmin>
+          </SignedIn>
+          <SignedOut>
+            <Navigate to="/login" replace />
+          </SignedOut>
+        </>
+      } />
+      
+      <Route path="/chat" element={
+        <>
+          <SignedIn>
+            <AppLayout><Chat /></AppLayout>
+          </SignedIn>
+          <SignedOut>
+            <Navigate to="/login" replace />
+          </SignedOut>
+        </>
+      } />
+      
+      <Route path="/documents" element={
+        <>
+          <SignedIn>
+            <AppLayout>
+              <RequireAdmin>
+                <Documents />
+              </RequireAdmin>
+            </AppLayout>
+          </SignedIn>
+          <SignedOut>
+            <Navigate to="/login" replace />
+          </SignedOut>
+        </>
+      } />
+      
+      <Route path="/analytics" element={
+        <>
+          <SignedIn>
+            <AppLayout>
+              <RequireAdmin>
+                <Analytics />
+              </RequireAdmin>
+            </AppLayout>
+          </SignedIn>
+          <SignedOut>
+            <Navigate to="/login" replace />
+          </SignedOut>
+        </>
+      } />
+
+      <Route path="/" element={
+        <SignedIn>
+          <Navigate to="/chat" replace />
+        </SignedIn>
+      } />
+      
+      <Route path="*" element={<Navigate to="/chat" replace />} />
+    </Routes>
+  </BrowserRouter>
 );
 
 export default App;

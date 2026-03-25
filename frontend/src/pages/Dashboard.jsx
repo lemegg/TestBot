@@ -1,169 +1,101 @@
 import React, { useState, useEffect } from 'react';
-import { useAuth } from '../context/AuthContext';
+import { useUser, useAuth } from '@clerk/clerk-react';
+import { MessageSquare, Clock, Users, BarChart3 } from 'lucide-react';
 
 const Dashboard = () => {
-  const [activeTab, setActiveTab] = useState('top-queries');
-  const [range, setRange] = useState('weekly');
-  const [data, setData] = useState(null);
-  const [error, setError] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const { token } = useAuth();
+  const { user } = useUser();
+  const { getToken } = useAuth();
+  const [stats, setStats] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  const fetchDebugData = async () => {
+    try {
+      const token = await getToken();
+      const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+      const api_base = isLocal ? `http://${window.location.hostname}:8001` : '';
+
+      const res = await fetch(`${api_base}/api/analytics/admin/debug`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        setStats(data);
+      }
+    } catch (error) {
+      console.error("Error fetching debug data:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const fetchAnalytics = async () => {
-      setLoading(true);
-      setError(null);
-      const api_base = window.location.origin.includes('localhost') || window.location.origin.includes('127.0.0.1') ? 'http://127.0.0.1:8000' : '';
-      
-      let url = `${api_base}/api/analytics/top-queries?range=${range}`;
-      if (activeTab === 'query-log') {
-        url = `${api_base}/api/analytics/query-log/monthly`;
-      } else if (activeTab === 'sop-missed') {
-        url = `${api_base}/api/analytics/sop-missed`;
-      }
+    fetchDebugData();
+  }, []);
 
-      try {
-        const response = await fetch(url, {
-          headers: { 'Authorization': `Bearer ${token}` }
-        });
-        if (!response.ok) {
-          if (response.status === 403) throw new Error('Not authorized to access analytics');
-          throw new Error('Failed to fetch data');
-        }
-        const result = await response.json();
-        setData(result);
-      } catch (err) {
-        setError(err.message);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchAnalytics();
-  }, [range, activeTab, token]);
-
-  if (error) return <div className="dashboard-error">Access Denied: {error}</div>;
+  if (loading) return <div className="loading-state">Loading debug info...</div>;
 
   return (
-    <div className="dashboard-container">
-      <header className="dashboard-header">
-        <h1>Analytics Dashboard</h1>
-        <div className="tabs">
-          <button 
-            className={`tab-btn ${activeTab === 'top-queries' ? 'active' : ''}`}
-            onClick={() => setActiveTab('top-queries')}
-          >
-            Top Queries
-          </button>
-          <button 
-            className={`tab-btn ${activeTab === 'query-log' ? 'active' : ''}`}
-            onClick={() => setActiveTab('query-log')}
-          >
-            Monthly Query Log
-          </button>
-          <button 
-            className={`tab-btn ${activeTab === 'sop-missed' ? 'active' : ''}`}
-            onClick={() => setActiveTab('sop-missed')}
-          >
-            SOP Missed Queries
-          </button>
-        </div>
+    <div className="dashboard-container" style={{ padding: '40px' }}>
+      <header className="page-header" style={{ padding: '0 0 32px 0' }}>
+        <h2>Admin Debug Dashboard</h2>
+        <p className="small" style={{ color: 'var(--text-secondary)' }}>Minimal verification system</p>
       </header>
 
-      {loading ? (
-        <div className="loading-state">Loading dashboard data...</div>
-      ) : (
-        <>
-          {activeTab === 'top-queries' && data?.top_queries && (
-            <div className="queries-list">
-              <div className="list-header">
-                <h3>Top 15 Queries ({range})</h3>
-                <div className="range-toggle">
-                  <button className={range === 'weekly' ? 'active' : ''} onClick={() => setRange('weekly')}>Weekly</button>
-                  <button className={range === 'monthly' ? 'active' : ''} onClick={() => setRange('monthly')}>Monthly</button>
-                </div>
-              </div>
-              <table>
-                <thead>
-                  <tr>
-                    <th>Rank</th>
-                    <th>Query</th>
-                    <th>Count</th>
-                    <th>👍 Positive %</th>
-                    <th>👎 Negative %</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {data.top_queries.map((item, index) => (
-                    <tr key={index}>
-                      <td>{item.rank}</td>
-                      <td>{item.query}</td>
-                      <td>{item.count}</td>
-                      <td>{item.positive_percent !== null ? `${item.positive_percent}%` : '—'}</td>
-                      <td>{item.negative_percent !== null ? `${item.negative_percent}%` : '—'}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
+      {/* Stats Overview */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '24px', marginBottom: '40px' }}>
+        <div className="card" style={{ display: 'flex', alignItems: 'center', gap: '16px', padding: '24px' }}>
+          <Users size={32} color="var(--accent-color)" />
+          <div>
+            <div style={{ fontSize: '24px', fontWeight: '700' }}>{stats?.total_users || 0}</div>
+            <div className="small" style={{ color: 'var(--text-secondary)' }}>Total Users</div>
+          </div>
+        </div>
+        <div className="card" style={{ display: 'flex', alignItems: 'center', gap: '16px', padding: '24px' }}>
+          <MessageSquare size={32} color="var(--accent-color)" />
+          <div>
+            <div style={{ fontSize: '24px', fontWeight: '700' }}>{stats?.total_queries || 0}</div>
+            <div className="small" style={{ color: 'var(--text-secondary)' }}>Total Queries</div>
+          </div>
+        </div>
+      </div>
 
-          {activeTab === 'query-log' && data?.logs && (
-            <div className="queries-list">
-              <h3>Monthly Query Log (Last 30 Days)</h3>
-              <div className="scrollable-table">
-                <table>
-                  <thead>
-                    <tr>
-                      <th>Query</th>
-                      <th>Timestamp</th>
-                      <th>Person</th>
-                      <th>Feedback</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {data.logs.map((log, index) => (
-                      <tr key={index}>
-                        <td>{log.query}</td>
-                        <td style={{ whiteSpace: 'nowrap' }}>{new Date(log.timestamp).toLocaleString()}</td>
-                        <td>{log.person}</td>
-                        <td style={{ textAlign: 'center' }}>
-                          {log.feedback === 'like' ? '👍' : log.feedback === 'dislike' ? '👎' : '—'}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          )}
-
-          {activeTab === 'sop-missed' && data?.logs && (
-            <div className="queries-list">
-              <h3>SOP Missed Queries (Information Not Found)</h3>
-              <div className="scrollable-table">
-                <table>
-                  <thead>
-                    <tr>
-                      <th>Query</th>
-                      <th>Timestamp</th>
-                      <th>Person</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {data.logs.map((log, index) => (
-                      <tr key={index}>
-                        <td>{log.query}</td>
-                        <td style={{ whiteSpace: 'nowrap' }}>{new Date(log.timestamp).toLocaleString()}</td>
-                        <td>{log.person}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          )}
-        </>
-      )}
+      {/* Recent Queries Section */}
+      <div className="card">
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '24px' }}>
+          <Clock size={24} color="var(--accent-color)" />
+          <h3 style={{ margin: 0 }}>Recent Customer Queries (Last 5)</h3>
+        </div>
+        <div className="table-wrapper">
+          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+            <thead>
+              <tr style={{ textAlign: 'left', borderBottom: '1px solid var(--border-color)' }}>
+                <th style={{ padding: '12px' }}>Email</th>
+                <th style={{ padding: '12px' }}>Company</th>
+                <th style={{ padding: '12px' }}>Question</th>
+                <th style={{ padding: '12px' }}>Time</th>
+              </tr>
+            </thead>
+            <tbody>
+              {stats?.recent_queries?.map((q, idx) => (
+                <tr key={idx} style={{ borderBottom: '1px solid var(--border-color)' }}>
+                  <td style={{ padding: '12px', fontSize: '13px' }}>{q.email}</td>
+                  <td style={{ padding: '12px' }}>{q.company}</td>
+                  <td style={{ padding: '12px', maxWidth: '300px', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                    {q.question}
+                  </td>
+                  <td style={{ padding: '12px', fontSize: '12px', color: 'var(--text-secondary)' }}>
+                    {new Date(q.created_at).toLocaleString([], { hour: '2-digit', minute: '2-digit', month: 'short', day: 'numeric' })}
+                  </td>
+                </tr>
+              ))}
+              {(!stats?.recent_queries || stats.recent_queries.length === 0) && (
+                <tr><td colSpan="4" style={{ padding: '24px', textAlign: 'center' }}>No queries found.</td></tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
     </div>
   );
 };

@@ -1,8 +1,0 @@
-NAME: Store Address Request
-SUMMARY: Guidance on providing the physical warehouse address. Priority is given to bulk orders, as the warehouse is not a standard retail location.
-STEPS:
-1. Ask if the customer is requesting the address for a bulk order.
-2. If NOT a bulk order, inform the customer that we do not typically operate as a retail storefront from the warehouse.
-3. If the customer is adamant about visiting to purchase or for a bulk order, provide the Hyderabad warehouse address.
-4. Address details: 4th Floor, Al Ameen Plaza Complex, Balanagar, Hyderabad, Telangana – 500037.
-5. Send the 'Store Address detail' email template to the customer.

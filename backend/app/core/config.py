@@ -10,19 +10,24 @@ load_dotenv(os.path.join(os.path.dirname(__file__), "../../../.env"), override=T
 class Settings(BaseSettings):
     GEMINI_API_KEY: str = ""
     MODEL_NAME: str = "models/gemini-1.5-flash"
-    EMBEDDING_MODEL_NAME: str = "sentence-transformers/all-MiniLM-L6-v2"
+    EMBEDDING_MODEL_NAME: str = "models/text-embedding-004"
+    EMBEDDING_DIMENSION: int = 768
     
     # Base directory for persistent data
     DATA_DIR: str = os.getenv("PERSISTENT_DATA_DIR", "backend")
     
-    # Use absolute paths for the database to avoid issues with working directories
-    @property
-    def DATABASE_URL(self) -> str:
-        db_path = os.path.abspath(os.path.join(self.DATA_DIR, "app.db"))
-        return f"sqlite:///{db_path}"
+    # Use environment variable for DATABASE_URL if present, otherwise default to local SQLite
+    DATABASE_URL: str = os.getenv("DATABASE_URL", f"sqlite:///{os.path.abspath(os.path.join('backend', 'app.db'))}")
 
     DOCS_DIR: str = os.path.join("backend", "data", "sops")
     INDEX_DIR: str = os.path.join(DATA_DIR, "faiss_index")
+
+    # Cloudflare R2
+    R2_ACCESS_KEY: str = os.getenv("R2_ACCESS_KEY", "")
+    R2_SECRET_KEY: str = os.getenv("R2_SECRET_KEY", "")
+    R2_ACCOUNT_ID: str = os.getenv("R2_ACCOUNT_ID", "")
+    R2_BUCKET_NAME: str = os.getenv("R2_BUCKET_NAME", "")
+    R2_CUSTOM_DOMAIN: str = os.getenv("R2_CUSTOM_DOMAIN", "")
 
     TOP_K: int = 4
     CHUNK_SIZE: int = 700
@@ -35,6 +40,11 @@ class Settings(BaseSettings):
     ANALYTICS_ALLOWED_EMAILS: str = ""
     FRONTEND_ORIGIN: str = "http://localhost:5173"
     PORT: int = 8000
+
+    # Clerk Auth
+    CLERK_FRONTEND_API: str = os.getenv("CLERK_FRONTEND_API", "")
+    CLERK_PUBLISHABLE_KEY: str = os.getenv("CLERK_PUBLISHABLE_KEY", "")
+    CLERK_SECRET_KEY: str = os.getenv("CLERK_SECRET_KEY", "")
 
     @property
     def allowed_emails(self) -> List[str]:

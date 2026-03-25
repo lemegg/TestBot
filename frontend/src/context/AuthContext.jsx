@@ -8,7 +8,9 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
 
   const login = async (email, password) => {
-    const api_base = window.location.origin.includes('localhost') || window.location.origin.includes('127.0.0.1') ? 'http://127.0.0.1:8000' : '';
+    const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+    const api_base = isLocal ? `http://${window.location.hostname}:8001` : '';
+    
     const formData = new FormData();
     formData.append('username', email);
     formData.append('password', password);

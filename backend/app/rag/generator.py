@@ -54,9 +54,9 @@ class Generator:
         context_str = ""
         for i, chunk in enumerate(context_chunks):
             context_str += f"--- CONTEXT {i+1} ---\n"
-            context_str += f"SOP: {chunk['sop_name']}\n"
-            context_str += f"Section: {chunk['section']}\n"
-            context_str += f"Content: {chunk['text']}\n\n"
+            context_str += f"SOP: {chunk.get('sop_name', 'Unknown')}\n"
+            context_str += f"Section: {chunk.get('section', 'N/A')}\n"
+            context_str += f"Content: {chunk.get('text', '')}\n\n"
 
         prompt = f"""
         You are an internal SOP Chatbot for 'The Affordable Organic Store'. 

@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
 const Login = () => {
+  const navigate = useNavigate();
   const [isRegister, setIsRegister] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -16,7 +18,10 @@ const Login = () => {
 
     if (isRegister) {
       try {
-        const api_base = window.location.origin.includes('localhost') || window.location.origin.includes('127.0.0.1') ? 'http://127.0.0.1:8000' : '';
+        // Dynamic detection of API base to avoid localhost vs 127.0.0.1 mismatch
+        const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+        const api_base = isLocal ? `http://${window.location.hostname}:8001` : '';
+        
         const res = await fetch(`${api_base}/auth/register`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -34,6 +39,7 @@ const Login = () => {
     } else {
       try {
         await login(email, password);
+        navigate('/dashboard');
       } catch (err) {
         setError('Invalid email or password');
       }

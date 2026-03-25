@@ -1,57 +1,84 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
-from sqlalchemy import func
+from sqlalchemy import func, and_
 from datetime import datetime, timedelta
-from app.core.database import get_db
-from app.core.auth import get_current_user
-from app.models.models import User, QueryLog, QueryFeedback
+from app.db import get_db
+from app.auth.clerk_auth import get_current_user, ClerkUser, require_admin
+from app.models.models import User, ChatLog, QueryFeedback
 from app.core.config import settings
 from typing import List
 
 router = APIRouter()
 
+@router.get("/admin/debug")
+def get_admin_debug(
+    db: Session = Depends(get_db),
+    current_user: ClerkUser = Depends(require_admin)
+):
+    """
+    Minimal debug endpoint for admin testing.
+    """
+    total_users = db.query(func.count(User.id)).scalar()
+    total_queries = db.query(func.count(ChatLog.id)).scalar()
+    
+    recent = (
+        db.query(ChatLog)
+        .order_by(ChatLog.timestamp.desc())
+        .limit(5)
+        .all()
+    )
+    
+    recent_queries = [
+        {
+            "email": q.email,
+            "company": q.company_name or "Unknown",
+            "question": q.query_text,
+            "created_at": q.timestamp.isoformat()
+        }
+        for q in recent
+    ]
+    
+    return {
+        "total_users": total_users,
+        "total_queries": total_queries,
+        "recent_queries": recent_queries
+    }
+
 @router.get("/top-queries")
 def get_top_queries(
     range: str = Query("weekly", regex="^(weekly|monthly)$"),
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: ClerkUser = Depends(require_admin)
 ):
-    if current_user.email.lower() not in settings.allowed_emails:
-        raise HTTPException(status_code=403, detail="Not authorized to access analytics")
-    
     days = 7 if range == "weekly" else 30
     start_date = datetime.utcnow() - timedelta(days=days)
     
-    # 1. Get top queries first
     top_results = (
         db.query(
-            QueryLog.query_text,
-            func.count(QueryLog.id).label("count")
+            ChatLog.query_text,
+            func.count(ChatLog.id).label("count")
         )
-        .filter(QueryLog.timestamp >= start_date)
-        .group_by(QueryLog.query_text)
-        .order_by(func.count(QueryLog.id).desc())
+        .filter(ChatLog.timestamp >= start_date)
+        .group_by(ChatLog.query_text)
+        .order_by(func.count(ChatLog.id).desc())
         .limit(15)
         .all()
     )
     
     final_results = []
     for rank, (query_text, count) in enumerate(top_results, 1):
-        # 2. For each query, calculate feedback stats
-        # Get all log IDs for this specific query text
-        log_ids = db.query(QueryLog.id).filter(QueryLog.query_text == query_text).all()
+        log_ids = db.query(ChatLog.id).filter(ChatLog.query_text == query_text).all()
         log_id_list = [l[0] for l in log_ids]
         
-        # Count likes and dislikes
-        likes = db.query(func.count(QueryFeedback.id)).filter(
+        likes = db.query(func.count(QueryFeedback.id)).filter(and_(
             QueryFeedback.query_log_id.in_(log_id_list),
             QueryFeedback.feedback_type == "like"
-        ).scalar()
+        )).scalar()
         
-        dislikes = db.query(func.count(QueryFeedback.id)).filter(
+        dislikes = db.query(func.count(QueryFeedback.id)).filter(and_(
             QueryFeedback.query_log_id.in_(log_id_list),
             QueryFeedback.feedback_type == "dislike"
-        ).scalar()
+        )).scalar()
         
         total_feedback = likes + dislikes
         pos_pct = 0
@@ -78,39 +105,43 @@ def get_top_queries(
 @router.get("/query-log/monthly")
 def get_monthly_query_log(
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: ClerkUser = Depends(require_admin)
 ):
-    if current_user.email.lower() not in settings.allowed_emails:
-        raise HTTPException(status_code=403, detail="Not authorized to access analytics")
-    
     start_date = datetime.utcnow() - timedelta(days=30)
     
-    # Query with joins to User and QueryFeedback
-    # We use a subquery or conditional logic for feedback prioritization if multiple exist
-    # But since the unique constraint prevents multiple feedback per user/query, 
-    # we just need to join.
+    # Query ChatLog and join with User for fallback data
     results = (
         db.query(
-            QueryLog.query_text,
-            QueryLog.timestamp,
-            User.email,
-            QueryFeedback.feedback_type
+            ChatLog.query_text,
+            ChatLog.timestamp,
+            ChatLog.email,
+            ChatLog.company_name,
+            QueryFeedback.feedback_type,
+            User.company_name.label("user_company"),
+            User.email.label("user_email")
         )
-        .join(User, QueryLog.user_id == User.id)
-        .outerjoin(QueryFeedback, QueryLog.id == QueryFeedback.query_log_id)
-        .filter(QueryLog.timestamp >= start_date)
-        .order_by(QueryLog.timestamp.desc())
+        .outerjoin(QueryFeedback, ChatLog.id == QueryFeedback.query_log_id)
+        .outerjoin(User, ChatLog.user_id == User.id)
+        .filter(ChatLog.timestamp >= start_date)
+        .order_by(ChatLog.timestamp.desc())
         .limit(100)
         .all()
     )
     
     logs = []
     for r in results:
+        # Use ChatLog data first, fallback to User data if it's missing or "Unknown"
+        email = r[2] or r[6] or "Unknown"
+        company = r[3]
+        if not company or company == "Unknown":
+            company = r[5] or "Unknown"
+
         logs.append({
             "query": r[0],
             "timestamp": r[1].isoformat(),
-            "person": r[2],
-            "feedback": r[3]
+            "email": email,
+            "company": company,
+            "feedback": r[4]
         })
         
     return {"logs": logs}
@@ -118,30 +149,44 @@ def get_monthly_query_log(
 @router.get("/sop-missed")
 def get_sop_missed_queries(
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: ClerkUser = Depends(require_admin)
 ):
-    if current_user.email.lower() not in settings.allowed_emails:
-        raise HTTPException(status_code=403, detail="Not authorized to access analytics")
-    
     results = (
         db.query(
-            QueryLog.query_text,
-            QueryLog.timestamp,
-            User.email
+            ChatLog.query_text,
+            ChatLog.timestamp,
+            ChatLog.email,
+            ChatLog.company_name,
+            User.company_name.label("user_company"),
+            User.email.label("user_email")
         )
-        .join(User, QueryLog.user_id == User.id)
-        .filter(QueryLog.response_status == "not_found")
-        .order_by(QueryLog.timestamp.desc())
+        .outerjoin(User, ChatLog.user_id == User.id)
+        .filter(ChatLog.response_status == "not_found")
+        .order_by(ChatLog.timestamp.desc())
         .limit(100)
         .all()
     )
     
     logs = []
     for r in results:
+        email = r[2] or r[5] or "Unknown"
+        company = r[3]
+        if not company or company == "Unknown":
+            company = r[4] or "Unknown"
+
         logs.append({
             "query": r[0],
             "timestamp": r[1].isoformat(),
-            "person": r[2]
+            "email": email,
+            "company": company
         })
         
     return {"logs": logs}
+
+@router.get("/users")
+def get_all_users(
+    db: Session = Depends(get_db),
+    current_user: ClerkUser = Depends(require_admin)
+):
+    users = db.query(User).order_by(User.created_at.desc()).all()
+    return users
