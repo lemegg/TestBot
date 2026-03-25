@@ -32,12 +32,21 @@ _clerk_jwks: Optional[Dict[str, Any]] = None
 def get_clerk_jwks():
     global _clerk_jwks
     if _clerk_jwks is None:
+        if not settings.CLERK_FRONTEND_API:
+            print("CRITICAL ERROR: CLERK_FRONTEND_API is not set in environment variables!")
+            return {"keys": []}
+            
+        clean_api = settings.CLERK_FRONTEND_API.replace("https://", "").replace("http://", "").rstrip("/")
+        jwks_url = f"https://{clean_api}/.well-known/jwks.json"
+        
         try:
-            response = requests.get(CLERK_PEM_URL)
+            print(f"DEBUG: Fetching Clerk JWKS from: {jwks_url}")
+            response = requests.get(jwks_url, timeout=10)
             response.raise_for_status()
             _clerk_jwks = response.json()
+            print("DEBUG: Successfully fetched Clerk JWKS")
         except Exception as e:
-            print(f"Error fetching Clerk JWKS: {e}")
+            print(f"ERROR fetching Clerk JWKS from {jwks_url}: {e}")
             return {"keys": []}
     return _clerk_jwks
 
