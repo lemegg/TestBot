@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 from app.api.chat import router as chat_router
 from app.api.auth import router as auth_router
 from app.api.user import router as user_router
@@ -46,8 +47,15 @@ app.include_router(feedback_router, prefix="/api/feedback", tags=["feedback"])
 
 # Serve the built React frontend
 frontend_path = os.path.join(os.getcwd(), "frontend", "dist")
+
 if os.path.exists(frontend_path):
-    app.mount("/", StaticFiles(directory=frontend_path, html=True), name="frontend")
+    # Serve static assets (js, css, etc.)
+    app.mount("/assets", StaticFiles(directory=os.path.join(frontend_path, "assets")), name="assets")
+    
+    # Catch-all for SPA: Serve index.html for any path not matched above
+    @app.get("/{full_path:path}")
+    async def serve_frontend(full_path: str):
+        return FileResponse(os.path.join(frontend_path, "index.html"))
 else:
     @app.get("/")
     async def root():
@@ -56,3 +64,4 @@ else:
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=settings.PORT)
+
