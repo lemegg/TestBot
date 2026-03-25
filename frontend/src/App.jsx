@@ -138,12 +138,26 @@ const App = () => (
       } />
 
       <Route path="/" element={
-        <SignedIn>
-          <Navigate to="/chat" replace />
-        </SignedIn>
+        <>
+          <SignedIn>
+            <Navigate to="/chat" replace />
+          </SignedIn>
+          <SignedOut>
+            <Navigate to="/login" replace />
+          </SignedOut>
+        </>
       } />
       
-      <Route path="*" element={<Navigate to="/chat" replace />} />
+      <Route path="*" element={
+        <>
+          <SignedIn>
+            <Navigate to="/chat" replace />
+          </SignedIn>
+          <SignedOut>
+            <Navigate to="/login" replace />
+          </SignedOut>
+        </>
+      } />
     </Routes>
   </BrowserRouter>
 );
