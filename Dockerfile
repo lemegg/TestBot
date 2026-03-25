@@ -3,6 +3,13 @@ FROM node:18-alpine AS build-frontend
 WORKDIR /frontend
 COPY frontend/package.json ./
 RUN npm install
+
+# Pass environment variables to Vite during build time
+ARG VITE_CLERK_PUBLISHABLE_KEY
+ARG VITE_CLERK_FRONTEND_API
+ENV VITE_CLERK_PUBLISHABLE_KEY=$VITE_CLERK_PUBLISHABLE_KEY
+ENV VITE_CLERK_FRONTEND_API=$VITE_CLERK_FRONTEND_API
+
 COPY frontend/ ./
 RUN npm run build
 
