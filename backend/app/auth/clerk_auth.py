@@ -104,8 +104,10 @@ def sync_user_with_database(db: Session, clerk_user_id: str, email: Optional[str
         db.rollback()
         return False
 
-# Admin emails whitelist
-ADMIN_EMAILS = ["worshipgate1@gmail.com", "shivam@theaffordableorganicstore.com"]
+# Admin emails whitelist - Now dynamically updated from environment
+_hardcoded_admins = ["worshipgate1@gmail.com", "shivam@theaffordableorganicstore.com"]
+_env_admins = [e.strip().lower() for e in settings.ANALYTICS_ALLOWED_EMAILS.split(",") if e.strip()]
+ADMIN_EMAILS = list(set(_hardcoded_admins + _env_admins))
 
 async def get_current_user(
     background_tasks: BackgroundTasks,
