@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import SourcesAccordion from './SourcesAccordion';
 import { useAuth } from '@clerk/clerk-react';
 
 const MessageBubble = ({ message }) => {
@@ -131,8 +130,6 @@ const MessageBubble = ({ message }) => {
           </div>
         )}
       </div>
-
-      <SourcesAccordion sources={message.sources} />
     </div>
   );
 };
