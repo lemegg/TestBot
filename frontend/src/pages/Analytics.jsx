@@ -9,6 +9,63 @@ const Analytics = () => {
   const [loading, setLoading] = useState(false);
   const { getToken } = useAuth();
 
+  const downloadCSV = (data, filename, headers) => {
+    if (!data || data.length === 0) return;
+
+    // Create CSV content
+    const csvRows = [];
+    
+    // Add headers
+    csvRows.push(headers.join(','));
+
+    // Add data rows
+    for (const row of data) {
+      const values = headers.map(header => {
+        // Map UI header names to data keys
+        const keyMap = {
+          'Rank': 'rank',
+          'Query': 'query',
+          'Count': 'count',
+          'Pos %': 'positive_percent',
+          'Neg %': 'negative_percent',
+          'Timestamp': 'timestamp',
+          'User': 'email',
+          'Company': 'company',
+          'Mobile Number': 'phone_number',
+          'Orders Shipped': 'orders_shipped',
+          'Feedback': 'feedback'
+        };
+        
+        const key = keyMap[header] || header.toLowerCase();
+        let val = row[key];
+        
+        // Handle special formatting
+        if (header === 'Timestamp' && val) {
+          val = new Date(val).toLocaleString();
+        }
+        if ((header === 'Pos %' || header === 'Neg %') && val !== null && val !== undefined) {
+          val = `${val}%`;
+        }
+        
+        // Escape quotes and commas
+        const escaped = ('' + (val || '—')).replace(/"/g, '""');
+        return `"${escaped}"`;
+      });
+      csvRows.push(values.join(','));
+    }
+
+    const csvString = csvRows.join('\n');
+    const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.setAttribute('href', url);
+    link.setAttribute('download', `${filename}_${new Date().toISOString().split('T')[0]}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   useEffect(() => {
     const fetchAnalytics = async () => {
       setLoading(true);
@@ -90,11 +147,20 @@ const Analytics = () => {
           <div className="analytics-body">
             {activeTab === 'top-queries' && data?.top_queries && (
               <div className="queries-list">
-                <div className="list-header">
+                <div className="list-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
                   <h3>Top 15 Queries ({range})</h3>
-                  <div className="range-toggle">
-                    <button className={range === 'weekly' ? 'active' : ''} onClick={() => setRange('weekly')}>Weekly</button>
-                    <button className={range === 'monthly' ? 'active' : ''} onClick={() => setRange('monthly')}>Monthly</button>
+                  <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+                    <button 
+                      onClick={() => downloadCSV(data.top_queries, `top_queries_${range}`, ['Rank', 'Query', 'Count', 'Pos %', 'Neg %'])}
+                      className="tab-btn"
+                      style={{ padding: '6px 12px', fontSize: '13px', backgroundColor: '#f0f0f0' }}
+                    >
+                      📥 Download CSV
+                    </button>
+                    <div className="range-toggle">
+                      <button className={range === 'weekly' ? 'active' : ''} onClick={() => setRange('weekly')}>Weekly</button>
+                      <button className={range === 'monthly' ? 'active' : ''} onClick={() => setRange('monthly')}>Monthly</button>
+                    </div>
                   </div>
                 </div>
                 <div className="docs-table-container">
@@ -126,7 +192,16 @@ const Analytics = () => {
 
             {activeTab === 'query-log' && data?.logs && (
               <div className="queries-list">
-                <h3>Monthly Query Log (Last 30 Days)</h3>
+                <div className="list-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                  <h3>Monthly Query Log (Last 30 Days)</h3>
+                  <button 
+                    onClick={() => downloadCSV(data.logs, 'monthly_query_log', ['Query', 'Timestamp', 'User', 'Company', 'Mobile Number', 'Orders Shipped', 'Feedback'])}
+                    className="tab-btn"
+                    style={{ padding: '6px 12px', fontSize: '13px', backgroundColor: '#f0f0f0' }}
+                  >
+                    📥 Download CSV
+                  </button>
+                </div>
                 <div className="docs-table-container">
                   <div className="scrollable-table">
                     <table>
@@ -164,7 +239,16 @@ const Analytics = () => {
 
             {activeTab === 'sop-missed' && data?.logs && (
               <div className="queries-list">
-                <h3>SOP Missed Queries (Information Not Found)</h3>
+                <div className="list-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                  <h3>SOP Missed Queries (Information Not Found)</h3>
+                  <button 
+                    onClick={() => downloadCSV(data.logs, 'sop_missed_queries', ['Query', 'Timestamp', 'User', 'Company', 'Mobile Number', 'Orders Shipped'])}
+                    className="tab-btn"
+                    style={{ padding: '6px 12px', fontSize: '13px', backgroundColor: '#f0f0f0' }}
+                  >
+                    📥 Download CSV
+                  </button>
+                </div>
                 <div className="docs-table-container">
                   <div className="scrollable-table">
                     <table>
