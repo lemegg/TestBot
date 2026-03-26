@@ -58,6 +58,8 @@ async def chat_endpoint(
         # SAFE USER EXTRACTION
         company_name = getattr(current_user, 'company_name', None) or "Unknown"
         email = getattr(current_user, 'email', None) or "Unknown"
+        phone_number = getattr(current_user, 'phone_number', None)
+        orders_shipped = getattr(current_user, 'orders_shipped', None)
         
         print(f"CHAT USER: {email}")
         print(f"COMPANY: {company_name}")
@@ -121,6 +123,8 @@ async def chat_endpoint(
             user_id=current_user.user_id,
             email=email,
             company_name=company_name,
+            phone_number=phone_number,
+            orders_shipped=orders_shipped,
             query_text=request.query,
             response_text=answer_summary,
             retrieved_sop=", ".join(sop_names) if sop_names else "NONE",

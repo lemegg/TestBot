@@ -25,6 +25,7 @@ class ClerkUser(BaseModel):
     name: Optional[str] = None
     company_name: Optional[str] = None
     phone_number: Optional[str] = None
+    orders_shipped: Optional[str] = None
 
 # Cache for Clerk Public Keys (JWKS)
 _clerk_jwks: Optional[Dict[str, Any]] = None
@@ -60,6 +61,7 @@ def sync_user_with_database(db: Session, clerk_user_id: str, email: Optional[str
         name = metadata.get("name")
         company_name = metadata.get("company_name")
         phone_number = metadata.get("phone_number")
+        orders_shipped = metadata.get("orders_shipped")
 
         if not user:
             new_user = User(
@@ -68,6 +70,7 @@ def sync_user_with_database(db: Session, clerk_user_id: str, email: Optional[str
                 name=name,
                 company_name=company_name,
                 phone_number=phone_number,
+                orders_shipped=orders_shipped,
                 role=role
             )
             db.add(new_user)
@@ -91,6 +94,9 @@ def sync_user_with_database(db: Session, clerk_user_id: str, email: Optional[str
                 updated = True
             if phone_number and user.phone_number != phone_number:
                 user.phone_number = phone_number
+                updated = True
+            if orders_shipped and user.orders_shipped != orders_shipped:
+                user.orders_shipped = orders_shipped
                 updated = True
             
             if updated:
@@ -197,10 +203,12 @@ async def get_current_user(
                 name = db_user.name or metadata.get("name")
                 company_name = db_user.company_name or metadata.get("company_name")
                 phone_number = db_user.phone_number or metadata.get("phone_number")
+                orders_shipped = db_user.orders_shipped or metadata.get("orders_shipped")
             else:
                 name = metadata.get("name")
                 company_name = metadata.get("company_name")
                 phone_number = metadata.get("phone_number")
+                orders_shipped = metadata.get("orders_shipped")
         finally:
             db.close()
 
@@ -217,7 +225,8 @@ async def get_current_user(
             email=email,
             name=name,
             company_name=company_name,
-            phone_number=phone_number
+            phone_number=phone_number,
+            orders_shipped=orders_shipped
         )
 
     except JWTError as e:

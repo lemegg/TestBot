@@ -136,6 +136,8 @@ const Analytics = () => {
                           <th>Timestamp</th>
                           <th>User</th>
                           <th>Company</th>
+                          <th>Mobile Number</th>
+                          <th>Orders Shipped</th>
                           <th>Feedback</th>
                         </tr>
                       </thead>
@@ -146,6 +148,8 @@ const Analytics = () => {
                             <td style={{ whiteSpace: 'nowrap' }}>{new Date(log.timestamp).toLocaleString()}</td>
                             <td>{log.email}</td>
                             <td>{log.company}</td>
+                            <td>{log.phone_number || '—'}</td>
+                            <td>{log.orders_shipped || '—'}</td>
                             <td style={{ textAlign: 'center' }}>
                               {log.feedback === 'like' ? '👍' : log.feedback === 'dislike' ? '👎' : '—'}
                             </td>
@@ -170,6 +174,8 @@ const Analytics = () => {
                           <th>Timestamp</th>
                           <th>User</th>
                           <th>Company</th>
+                          <th>Mobile Number</th>
+                          <th>Orders Shipped</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -179,6 +185,8 @@ const Analytics = () => {
                             <td style={{ whiteSpace: 'nowrap' }}>{new Date(log.timestamp).toLocaleString()}</td>
                             <td>{log.email}</td>
                             <td>{log.company}</td>
+                            <td>{log.phone_number || '—'}</td>
+                            <td>{log.orders_shipped || '—'}</td>
                           </tr>
                         ))}
                       </tbody>

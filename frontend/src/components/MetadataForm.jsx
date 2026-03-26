@@ -6,7 +6,8 @@ const MetadataForm = ({ onComplete }) => {
   const [formData, setFormData] = useState({
     name: '',
     company_name: '',
-    phone_number: ''
+    phone_number: '',
+    orders_shipped: ''
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -25,6 +26,7 @@ const MetadataForm = ({ onComplete }) => {
           name: formData.name,
           company_name: formData.company_name,
           phone_number: formData.phone_number,
+          orders_shipped: formData.orders_shipped,
           role: user.unsafeMetadata?.role || 'member'
         }
       });
@@ -84,6 +86,17 @@ const MetadataForm = ({ onComplete }) => {
               value={formData.phone_number}
               onChange={(e) => setFormData({...formData, phone_number: e.target.value})}
               placeholder="+1 234 567 890"
+            />
+          </div>
+
+          <div className="form-group">
+            <label>How many orders do you ship?</label>
+            <input 
+              type="text" 
+              required 
+              value={formData.orders_shipped}
+              onChange={(e) => setFormData({...formData, orders_shipped: e.target.value})}
+              placeholder="e.g. 100 per month"
             />
           </div>
 

@@ -15,6 +15,7 @@ class UserResponse(BaseModel):
     name: Optional[str] = None
     company_name: Optional[str] = None
     phone_number: Optional[str] = None
+    orders_shipped: Optional[str] = None
     role: str
     
     class Config:

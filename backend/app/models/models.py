@@ -14,6 +14,7 @@ class User(Base):
     name = Column(String, nullable=True)
     company_name = Column(String, nullable=True)
     phone_number = Column(String, nullable=True)
+    orders_shipped = Column(String, nullable=True)
     role = Column(String, default="member") # 'admin' or 'member'
     created_at = Column(DateTime, default=datetime.utcnow)
 
@@ -23,6 +24,8 @@ class ChatLog(Base):
     user_id = Column(String, ForeignKey("users.id"), nullable=True)
     email = Column(String, nullable=True)
     company_name = Column(String, nullable=True)
+    phone_number = Column(String, nullable=True)
+    orders_shipped = Column(String, nullable=True)
     query_text = Column(Text)
     response_text = Column(Text, nullable=True)
     timestamp = Column(DateTime, default=datetime.utcnow)

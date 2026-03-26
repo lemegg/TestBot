@@ -116,9 +116,13 @@ def get_monthly_query_log(
             ChatLog.timestamp,
             ChatLog.email,
             ChatLog.company_name,
+            ChatLog.phone_number,
+            ChatLog.orders_shipped,
             QueryFeedback.feedback_type,
             User.company_name.label("user_company"),
-            User.email.label("user_email")
+            User.email.label("user_email"),
+            User.phone_number.label("user_phone"),
+            User.orders_shipped.label("user_orders")
         )
         .outerjoin(QueryFeedback, ChatLog.id == QueryFeedback.query_log_id)
         .outerjoin(User, ChatLog.user_id == User.id)
@@ -131,17 +135,22 @@ def get_monthly_query_log(
     logs = []
     for r in results:
         # Use ChatLog data first, fallback to User data if it's missing or "Unknown"
-        email = r[2] or r[6] or "Unknown"
+        email = r[2] or r[8] or "Unknown"
         company = r[3]
         if not company or company == "Unknown":
-            company = r[5] or "Unknown"
+            company = r[7] or "Unknown"
+        
+        phone = r[4] or r[9] or "Unknown"
+        orders = r[5] or r[10] or "Unknown"
 
         logs.append({
             "query": r[0],
             "timestamp": r[1].isoformat(),
             "email": email,
             "company": company,
-            "feedback": r[4]
+            "phone_number": phone,
+            "orders_shipped": orders,
+            "feedback": r[6]
         })
         
     return {"logs": logs}
@@ -157,8 +166,12 @@ def get_sop_missed_queries(
             ChatLog.timestamp,
             ChatLog.email,
             ChatLog.company_name,
+            ChatLog.phone_number,
+            ChatLog.orders_shipped,
             User.company_name.label("user_company"),
-            User.email.label("user_email")
+            User.email.label("user_email"),
+            User.phone_number.label("user_phone"),
+            User.orders_shipped.label("user_orders")
         )
         .outerjoin(User, ChatLog.user_id == User.id)
         .filter(ChatLog.response_status == "not_found")
@@ -169,16 +182,21 @@ def get_sop_missed_queries(
     
     logs = []
     for r in results:
-        email = r[2] or r[5] or "Unknown"
+        email = r[2] or r[7] or "Unknown"
         company = r[3]
         if not company or company == "Unknown":
-            company = r[4] or "Unknown"
+            company = r[6] or "Unknown"
+            
+        phone = r[4] or r[8] or "Unknown"
+        orders = r[5] or r[9] or "Unknown"
 
         logs.append({
             "query": r[0],
             "timestamp": r[1].isoformat(),
             "email": email,
-            "company": company
+            "company": company,
+            "phone_number": phone,
+            "orders_shipped": orders
         })
         
     return {"logs": logs}
