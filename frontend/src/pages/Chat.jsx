@@ -7,7 +7,7 @@ const Chat = () => {
   const [messages, setMessages] = useState([
     {
       sender: 'bot',
-      text: 'Hello! I am your AI Knowledge Assistant. How can I help you today?',
+      text: 'Hi! I can help you with shipping rates, delivery charges, and related queries. What would you like to check?',
     }
   ]);
   const [loading, setLoading] = useState(false);
