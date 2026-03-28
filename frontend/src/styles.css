@@ -266,14 +266,72 @@ body {
 
 .message.user {
   background: var(--user-bg);
+  color: white; /* High contrast text */
   border-radius: 20px 20px 4px 20px;
   box-shadow: 0 4px 12px rgba(44, 62, 80, 0.15);
+  align-self: flex-end;
+}
+
+.message.user .text {
+  color: white;
 }
 
 .message.bot {
   background: #f8fafc;
+  color: var(--text-primary);
   border: 1px solid #e2e8f0;
   border-radius: 20px 20px 20px 4px;
+  align-self: flex-start;
+}
+
+.bot-content .section-title {
+  font-size: 14px;
+  font-weight: 700;
+  margin-top: 12px;
+  margin-bottom: 8px;
+  color: var(--text-primary);
+}
+
+.bot-content ul, .bot-content ol {
+  padding-left: 20px;
+  margin-bottom: 12px;
+}
+
+.bot-content li {
+  margin-bottom: 4px;
+}
+
+.feedback-section {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px dotted #e2e8f0;
+}
+
+.feedback-btn {
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  padding: 4px 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-size: 14px;
+}
+
+.feedback-btn:hover {
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+}
+
+.thinking {
+  align-self: flex-start;
+  padding: 12px 20px;
+  background: #f1f5f9;
+  border-radius: 12px;
+  font-size: 14px;
+  color: var(--text-secondary);
+  font-style: italic;
 }
 
 .chat-input-container {
@@ -291,6 +349,9 @@ input {
 
 button[type="submit"], .tab-btn.active {
   background: var(--user-bg);
+  color: white;
+  border: none;
+  cursor: pointer;
   border-radius: var(--radius-md);
   box-shadow: 0 4px 12px rgba(44, 62, 80, 0.2);
   transition: all 0.2s;
