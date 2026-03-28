@@ -1,7 +1,7 @@
 # Architectural Decisions
 
 ## Admin Identification
-- **Hardcoded Email**: Admin is identified by `worshipgate1@gmail.com`.
+- **Hardcoded Emails**: Admins are identified by `worshipgate1@gmail.com`, `shivam@theaffordableorganicstore.com`, and `naiknikhil248@gmail.com`.
 - **Simplification**: Removed organization and department-based logic to focus on a direct customer-to-admin model.
 
 ## Data Storage

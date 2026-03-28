@@ -5,7 +5,7 @@
 - Customer-facing Chatbot
 - User Metadata Form (Name, Company, Phone)
 - RAG System (Gemini + pgvector)
-- Admin Role (Hardcoded email: worshipgate1@gmail.com)
+- Admin Role (Hardcoded emails: worshipgate1@gmail.com, shivam@theaffordableorganicstore.com, naiknikhil248@gmail.com)
 - Basic Admin Dashboard (Users list, Query list)
 - Knowledge Base / Documents page with Upload UI (Admin Only)
 - Document Upload to Cloudflare R2 and Processing pipeline
