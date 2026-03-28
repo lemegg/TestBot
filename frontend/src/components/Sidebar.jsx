@@ -3,7 +3,7 @@ import { NavLink } from 'react-router-dom';
 import { LayoutDashboard, MessageSquare, Files, BarChart3, LogOut, Menu, X, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useAuth, useUser } from '@clerk/clerk-react';
 
-const ADMIN_EMAILS = ["worshipgate1@gmail.com", "shivam@theaffordableorganicstore.com"];
+const ADMIN_EMAILS = ["worshipgate1@gmail.com", "shivam@theaffordableorganicstore.com", "naiknikhil248@gmail.com"];
 
 const Sidebar = () => {
   const [isOpen, setIsOpen] = useState(false);

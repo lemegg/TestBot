@@ -12,8 +12,8 @@ const Documents = () => {
 
   const role = user?.publicMetadata?.role;
   const email = user?.primaryEmailAddress?.emailAddress;
-  const ADMIN_EMAIL = "worshipgate1@gmail.com";
-  const isAdmin = role === 'admin' || email === ADMIN_EMAIL;
+  const ADMIN_EMAILS = ["worshipgate1@gmail.com", "shivam@theaffordableorganicstore.com", "naiknikhil248@gmail.com"];
+  const isAdmin = role === 'admin' || (email && ADMIN_EMAILS.includes(email));
 
   const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
   const API_BASE = isLocal ? `http://${window.location.hostname}:8001` : '';

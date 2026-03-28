@@ -2,7 +2,7 @@ import React from 'react';
 import { Navigate } from 'react-router-dom';
 import { useUser } from '@clerk/clerk-react';
 
-const ADMIN_EMAILS = ["worshipgate1@gmail.com", "shivam@theaffordableorganicstore.com"];
+const ADMIN_EMAILS = ["worshipgate1@gmail.com", "shivam@theaffordableorganicstore.com", "naiknikhil248@gmail.com"];
 
 const RequireAdmin = ({ children }) => {
   const { user, isLoaded } = useUser();
